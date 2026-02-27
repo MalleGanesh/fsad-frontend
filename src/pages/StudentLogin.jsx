@@ -8,7 +8,7 @@ export default function StudentLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [captchaInput, setCaptchaInput] = useState("");
-  const [captchaText, setCaptchaText] = useState("");
+  const [captchaText, setCaptchaText] = useState(""); 
 
   // ✅ Define function BEFORE useEffect
   const generateCaptcha = () => {
