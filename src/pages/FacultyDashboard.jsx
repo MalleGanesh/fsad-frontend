@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles.css";
 
 export default function FacultyDashboard() {
@@ -20,27 +21,38 @@ export default function FacultyDashboard() {
       return;
     }
 
-    // Compute all values first
-    let newFeedbackList = [];
-    let newAvgRating = 0;
-
-    const stored = localStorage.getItem("latestFeedback");
-    if (stored) {
-      const feedback = JSON.parse(stored);
-
-      // Show feedback only for this faculty
-      if (feedback.facultyName === faculty) {
-        const ratings = [feedback.q1, feedback.q2, feedback.q3, feedback.q4, feedback.q5];
-        newAvgRating = (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(2);
-        newFeedbackList = [feedback];
-      }
-    }
-
-    // Set all state at once
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFacultyName(faculty);
-    setFeedbackList(newFeedbackList);
-    setAvgRating(newAvgRating);
+
+    axios
+      .get(`/api/feedback/faculty/${encodeURIComponent(faculty)}`)
+      .then((response) => {
+        const newFeedbackList = response.data || [];
+        setFeedbackList(newFeedbackList);
+
+        if (newFeedbackList.length === 0) {
+          setAvgRating(0);
+          return;
+        }
+
+        const allRatings = newFeedbackList.map((f) => {
+          const q1 = f.q1 || 0;
+          const q2 = f.q2 || 0;
+          const q3 = f.q3 || 0;
+          const q4 = f.q4 || 0;
+          const q5 = f.q5 || 0;
+          return (q1 + q2 + q3 + q4 + q5) / 5;
+        });
+
+        const overall = allRatings.length > 0 
+          ? allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length 
+          : 0;
+
+        setAvgRating(overall.toFixed(2));
+      })
+      .catch(() => {
+        setFeedbackList([]);
+        setAvgRating(0);
+      });
   }, [navigate]);
 
   const logout = () => {
@@ -117,8 +129,8 @@ export default function FacultyDashboard() {
                     <span className="rating-badge">{f.q5}/5</span>
                   </td>
                   <td>
-                    <strong style={{ color: getRatingColor((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5) }}>
-                      {((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5).toFixed(2)}
+                    <strong style={{ color: getRatingColor(((f.q1 || 0) + (f.q2 || 0) + (f.q3 || 0) + (f.q4 || 0) + (f.q5 || 0)) / 5) }}>
+                      {(((f.q1 || 0) + (f.q2 || 0) + (f.q3 || 0) + (f.q4 || 0) + (f.q5 || 0)) / 5).toFixed(2)}
                     </strong>
                   </td>
                   <td className="comment-cell">{f.comment || "-"}</td>

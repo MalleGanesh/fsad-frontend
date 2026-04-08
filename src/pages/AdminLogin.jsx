@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles.css";
 
 export default function AdminLogin() {
@@ -7,13 +8,16 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const adminLogin = () => {
-    // TEMPORARY (frontend-only)
-    if (username === "Ganesh" && password === "Ganesh@1234") {
+  const adminLogin = async () => {
+    try {
+      await axios.post("/api/auth/admin/login", { 
+        username: username.trim(), 
+        password: password.trim() 
+      });
       sessionStorage.setItem("adminLoggedIn", "true");
       navigate("/admin-dashboard");
-    } else {
-      alert("Invalid Admin Credentials");
+    } catch (error) {
+      alert(error.response?.data?.message || "Invalid Admin Credentials");
     }
   };
 

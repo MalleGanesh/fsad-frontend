@@ -1,62 +1,100 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles.css";
 
 export default function FeedbackForm() {
   const navigate = useNavigate();
 
-  // 🔐 Protect route
-  useEffect(() => {
-    if (sessionStorage.getItem("studentLoggedIn") !== "true") {
-      alert("Please login as Student first");
-      navigate("/student-login");
-    }
-  }, [navigate]);
-
-  const [facultyValue, setFacultyValue] = useState("");
-  const [facultyName, setFacultyName] = useState("");
+  const [faculties, setFaculties] = useState([]);
+  const [facultyId, setFacultyId] = useState("");
   const [courseName, setCourseName] = useState("");
   const [ratings, setRatings] = useState({});
   const [comment, setComment] = useState("");
 
-  const facultyMap = {
-    "CSE118 - IoT": "Dr. R. Saxena",
-    "CSE205 - Java": "Dr. Hari Pothuluru",
-    "CSE210 - Python": "Dr. Maneesha Vadduri",
-    "CSE305 - DBMS": "Dr. Nichenametla Rajesh",
-    "CSE402 - AI": "Dr. K. Srinivas",
-  };
+  // 🔐 Protect route & Fetch faculty
+  useEffect(() => {
+    if (sessionStorage.getItem("studentLoggedIn") !== "true") {
+      alert("Please login as Student first");
+      navigate("/student-login");
+      return;
+    }
 
-  const handleFacultyChange = (value) => {
-    setFacultyValue(value);
-    setCourseName(value);
-    setFacultyName(facultyMap[value]);
-  };
+    axios.get("/api/faculty?enabled=true")
+      .then(res => {
+        setFaculties(res.data || []);
+      })
+      .catch(err => {
+        console.error("Failed to fetch faculty:", err);
+        alert("⚠️ Error: Could not load faculty list from server.");
+      });
+  }, [navigate]);
 
   const handleRating = (q, value) => {
     setRatings({ ...ratings, [q]: parseInt(value) });
   };
 
-  const submitFeedback = (e) => {
+  const handleFacultyChange = (id) => {
+    setFacultyId(id);
+    const selected = faculties.find(f => String(f.id) === String(id));
+    if (selected && selected.course) {
+      setCourseName(selected.course);
+    }
+  };
+
+  const submitFeedback = async (e) => {
     e.preventDefault();
 
-    if (Object.keys(ratings).length < 5) {
-      alert("Please answer all questions");
+    if (!facultyId) {
+      alert("Please select a faculty member");
       return;
     }
 
-    const feedback = {
-      facultyName,
+    if (!courseName.trim()) {
+      alert("Please enter the course name");
+      return;
+    }
+
+    // 🛡️ Ensure all 5 ratings are present
+    const requiredQuestions = ["q1", "q2", "q3", "q4", "q5"];
+    const missing = requiredQuestions.filter(q => !ratings[q]);
+
+    if (missing.length > 0) {
+      alert(`Please answer all questions. Missing: ${missing.join(", ")}`);
+      return;
+    }
+
+    // ✅ Get student info from session/local storage
+    const studentName = sessionStorage.getItem("studentName");
+    const authUser = JSON.parse(localStorage.getItem("authUser") || "{}");
+    const studentEmail = authUser.email;
+
+    // 🔐 Safety check
+    if (!studentName || !studentEmail) {
+      alert("Session expired. Please login again.");
+      navigate("/student-login");
+      return;
+    }
+
+    const feedbackData = {
+      studentName,
+      studentEmail,
+      facultyId,
       courseName,
       ...ratings,
       comment,
     };
 
-    // ✅ Frontend-only storage (for Admin / Faculty dashboards)
-    localStorage.setItem("latestFeedback", JSON.stringify(feedback));
-
-    alert("Feedback submitted successfully");
-    navigate("/"); // or /thank-you later
+    try {
+      await axios.post("/api/feedback", feedbackData);
+      alert("✅ Feedback submitted successfully!");
+      navigate("/");
+    } catch (error) {
+      console.error("Submission error:", error);
+      const serverMessage = error.response?.data || "Failed to submit feedback. Please try again.";
+      const errorText = typeof serverMessage === 'object' ? serverMessage.message : serverMessage;
+      alert(`❌ Error: ${errorText}`);
+    }
   };
 
   return (
@@ -67,20 +105,30 @@ export default function FeedbackForm() {
         <form onSubmit={submitFeedback}>
           <label>Faculty Name</label>
           <select
-            value={facultyValue}
+            value={facultyId}
             onChange={(e) => handleFacultyChange(e.target.value)}
             required
           >
             <option value="">-- Select Faculty --</option>
-            <option value="CSE118 - IoT">Dr. R. Saxena</option>
-            <option value="CSE205 - Java">Dr. Hari Pothuluru</option>
-            <option value="CSE210 - Python">Dr. Maneesha Vadduri</option>
-            <option value="CSE305 - DBMS">Dr. Nichenametla Rajesh</option>
-            <option value="CSE402 - AI">Dr. K. Srinivas</option>
+            {faculties.length > 0 ? (
+              faculties.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name} - {f.facultyId}
+                </option>
+              ))
+            ) : (
+              <option disabled>No approved faculty available</option>
+            )}
           </select>
 
           <label>Course Code & Name</label>
-          <input value={courseName} readOnly />
+          <input 
+            placeholder="Faculty course will appear here"
+            value={courseName} 
+            readOnly
+            className="readonly-input"
+            required 
+          />
 
           {/* QUESTIONS */}
           {[1, 2, 3, 4, 5].map((q) => (
