@@ -4,8 +4,8 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import axios from "axios";
 
-// Config for Render deployment: axios now uses the local /api proxy configured in Nginx
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || "/api";
+// In production, use the exact backend domain. In dev, use the built-in Vite proxy.
+axios.defaults.baseURL = import.meta.env.PROD ? "https://fsad-backend-5j11.onrender.com" : "";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
