@@ -1,7 +1,8 @@
 # Stage 1: Build
 FROM node:18-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+# Copy only package.json to avoid platform-specific lockfile issues
+COPY package.json ./
 RUN npm install
 COPY . .
 
