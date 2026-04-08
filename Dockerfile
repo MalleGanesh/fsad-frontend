@@ -1,9 +1,13 @@
 # Stage 1: Build
-FROM node:18-alpine AS build
+FROM node:20 AS build
 WORKDIR /app
+
 # Copy only package.json to avoid platform-specific lockfile issues
 COPY package.json ./
+
 RUN npm install
+
+# Copy all other source files (honoring .dockerignore)
 COPY . .
 
 # Accept build-time environment variables
