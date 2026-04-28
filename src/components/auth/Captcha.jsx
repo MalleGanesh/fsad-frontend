@@ -12,10 +12,10 @@ export default function Captcha({ onVerify }) {
     // Exclude visually ambiguous characters: 0, O, 1, l, I
     const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz';
     let result = '';
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const rots = Array.from({ length: 6 }, () => Math.floor(Math.random() * 21) - 10);
+    const rots = Array.from({ length: 5 }, () => Math.floor(Math.random() * 21) - 10);
     setCaptchaStr(result);
     setRotations(rots);
     setInputValue('');

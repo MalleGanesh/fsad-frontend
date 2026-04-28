@@ -4,7 +4,7 @@ import axios from "axios";
 import "../styles.css";
 
 export default function FacultyLogin() {
-  const [mode, setMode] = useState("signin");
+  const [mode, setMode] = useState("signup");
   const [facultyId, setFacultyId] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

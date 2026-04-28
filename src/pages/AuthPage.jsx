@@ -5,7 +5,7 @@ import ForgotPassword from '../components/auth/ForgotPassword';
 
 export default function AuthPage() {
   // 'signin', 'signup', or 'forgot'
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState('signup');
 
   return (
     <div className="auth-page">
